@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!--Change the title-->
+        <title>Experiment</title>
+        
+        <!--jsPsych necessities start-->
+        <script src="../static/js/jsPsych-6.0.1/jspsych.js"></script>
+        <link href="../static/js/jsPsych-6.0.1/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+        <!--jsPsych necessities end-->
+        
+        <!--jsPsych plugins start-->
+        <!--//////////////////|\\\\\\\\\\\\\\\\\\-->
+        <!--//     Your jsPsych plugins here    \\-->
+        
+        
+        <script src="../static/js/jsPsych-6.0.1/plugins/jspsych-html-keyboard-response.js"></script>    
+        
+        
+        <!--\\                                 //-->
+        <!--\\\\\\\\\\\\\\\\\\|//////////////////-->           
+        <!--jsPsych plugins end-->
+        
+        <!--PsiTurk inserts start-->
+        <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="../static/lib/underscore-min.js" type="text/javascript"> </script>
+        <script src="../static/lib/backbone-min.js" type="text/javascript"> </script>
+        <script src="../static/lib/d3.v3.min.js" type="text/javascript"> </script>
+        <!-- These variables are necessary to implement psiTurk -->
+        <script type="text/javascript">
+            // These fields provided by the psiTurk Server
+            var uniqueId = "{{ uniqueId }}"; // a unique string identifying the worker/task
+            var adServerLoc = "{{ adServerLoc }}"; // the location of your ad (so you can send user back at end of experiment)
+            var mode = "{{ mode }}"; // is this running live, sandbox, or in debug mode?
+        </script>
+        <!-- utils.js and psiturk.js provide the basic psiturk functionality -->
+        <script src="../static/js/utils.js" type="text/javascript"></script>
+        <script src="../static/js/psiturk.js" type="text/javascript"></script>
+        <!--PsiTurk inserts end-->
+    </head>
+    <!--Js for loading screen-->
+    <script type="text/javascript">
+      $(window).load(
+        function() {
+          $(".loader").fadeOut("slow");
+        }
+      );
+  </script>
+    <body>
+      <div id="loaderDiv" class="loader" style="width=100%; height=100%"><br style="margin-bottom:3em;"/>
+        <img id="imageTag" src="" style="width=100%; height=100%"/>
+        <p style="text-align: center;font-size: 5vw;">Loading...</p>
+        <p style="text-align: center;font-size: 3vw;">This could take up to 5 minutes.</p>
+        <p style="text-align: center;font-size: 2vw;">Don't fret, you're still earning money as it loads. :)</p>
+        <p style="text-align: center;font-size: 1vw;">(If the browser displays a message about being unresponsive, please click "Wait" and wait for the page to load.)</p>
+      </div> 
+      <div id='displayDiv' style ='width:auto; height:auto;'> </div>
+      <canvas class="canvas" id="cueCanvas" style="margin:auto; display:block"> </canvas>
+    </body>
+    <script>
+    
+        //Data switches
+        var psiTurkIsOn = 0;   // 0: Test locally.  1: Test/Run on psiTurk
+        var savingLocally = 0; // 0: Nothing.       1: Download CSV file
+        var displayData = 0;   // 0: Nothing.       1: Display data on browser
+        var username = '';     // Username for psiturk server
+        var tableName = '';    // MySQL Table Name 
+        var folderName = '';   // Folder containing the experiment
+        
+        
+        // Load psiturk
+        if (psiTurkIsOn){
+          var psiturk = new PsiTurk(uniqueId, adServerLoc, mode);
+        } 
+        
+        ///////////////////////////////////////////////////////////////
+        //-----------------Your code below this line-----------------//
+
+        //Canvas Parameters
+        var canvasWidth = window.innerWidth;
+        var canvasHeight = window.innerHeight;
+        var canvasWidthCenter = canvasWidth/2;
+        var canvasHeightCenter = canvasHeight/2;
+        
+        //Initialize the canvas
+        var canvas = document.getElementById("cueCanvas");
+        var cueContext = cueCanvas.getContext("2d");
+        cueContext.canvas.width = canvasWidth;
+        cueContext.canvas.height = canvasHeight;
+        
+        //Stimuli block parameters
+        //var angleForPeriphery = 10; //In degrees
+        var stimRectWidth = 150;
+        var stimRectHeight = 150;
+        var gapBetweenStim = 0; //This will change based on the question below.
+        
+        //Stimuli parameters
+        var numberOfCirclesCenterCondition1 = 30;
+        var numberOfCirclesPeripheryCondition1 = 30;
+        var radiusOfCircle = 14;
+        var overlapFactor = 0.7; //0 to 1, where 1 is no overlap at all, and 0 is purely random
+        var counterLimit = 1000;
+        
+        //COLOR PARAMETERS
+        var centerSaturation = 0.50;
+        var periSatCondition30 = 0.30; 
+        var periSatCondition40 = 0.40; 
+        var periSatCondition50 = 0.50; 
+        var periSatCondition60 = 0.60; 
+        var periSatCondition70 = 0.70; 
+        
+        var theObjectsValue = 1.0;
+
+        //Trial Parameters
+        //(Per condition)
+        var numberOfTrials = 10;
+        var multiples = 2; 
+        var numberOfFlashesCondition1 = 0;
+        var numberOfFlashesCondition2 = 19;
+        
+        //Pre-made stimuli per saturation level **IMPORTANT** This needs to be more than the number of flashes!
+        var numberOfStimuliImagesPerSaturationLevel = 30;
+        //Number of sets of stimuli per saturation level
+        var numberOfSetsOfStimuliImagesPerSaturationLevel = 3;
+        
+        //Time between the trials (in ms)
+        var minPostTrialTime = 0;
+        var maxPostTrialTime = 0;
+        var fixationCrossTime = 500;
+        var gapBetweenStimuliAndQuestion = 500;
+        var gapBetweenStimuli = 0;
+        var stimuliPresentationTime = 200;
+        var comparisonPresentationTime = stimuliPresentationTime * 2;
+        
+        //Key parameters
+        var peripheryKey = 'P';
+        var centerKey = 'C';
+        
+        
+        
+        // Make your experiment
+        var hello_trial = {
+          type: 'html-keyboard-response',
+          stimulus: 'Hello world! <br/> Press any key to end the experiment.'
+        };
+        
+        
+        
+        //Timeline array to be fed into the jsPsych.init function
+        var timeline = [];
+        
+        //Push the trials into the timeline array
+        timeline.push(hello_trial);
+        
+        //
+        //======== FUNCTIONS ========
+        //===========================
+        
+        //Function to generate a color at a certain hue, saturation, and value
+        function generateColor(h,s,v){
+        
+          // Initialize variables to be used to calculate RGB values
+          var c = v*s;
+          var x = c*(1-( Math.abs(((h/60)%2)-1) ));
+          var m = v-c;
+          
+          //R',G', and B' are intermediate values used to calculate the actual RGB
+          var rPrime = 0;
+          var gPrime = 0;
+          var bPrime = 0;
+          
+          //R',G', and B' are dependent on hue
+          if (0<=h && h<60){
+            rPrime = c;
+            gPrime = x;
+            bPrime = 0;
+          }
+          else if (60<=h && h<120){
+            rPrime = x;
+            gPrime = c;
+            bPrime = 0;
+          }
+          else if (120<=h && h<180){
+            rPrime = 0;
+            gPrime = c;
+            bPrime = x;
+          }
+          else if (180<=h && h<240){
+            rPrime = 0;
+            gPrime = x;
+            bPrime = c;
+          }
+          else if (240<=h && h<300){
+            rPrime = x;
+            gPrime = 0;
+            bPrime = c;
+          }
+          else if (300<=h && h<360){
+            rPrime = c;
+            gPrime = 0;
+            bPrime = x;
+          }
+          else{
+            alert(  "Error: colorGenerator(): Hue is out of range! Hue is " + h);
+          }
+          
+          var r = Math.floor((rPrime+m)*255);
+          var g = Math.floor((gPrime+m)*255);
+          var b = Math.floor((bPrime+m)*255);
+          
+          var colorString = "rgba(" + r + ", " + g + ", " + b + ", 1)";
+
+          return colorString;
+          
+        }//End of generateColor
+        
+        
+        
+        
+        //-----------------Your code above this line-----------------//
+        ///////////////////////////////////////////////////////////////
+
+
+        //---------Run the experiment---------
+    
+        //Initiate the experiment
+        jsPsych.init({
+          timeline: timeline,
+          on_finish: function(){ //Execute this when the experiment finishes
+            if(savingLocally){
+              jsPsych.data.get().localSave('csv','testSave.csv'); //Save the data locally in a .csv file
+            }
+            if(displayData){
+              jsPsych.data.displayData(); //Display the data onto the browser screen
+            }
+            if(psiTurkIsOn){
+              psiturk.saveData({ 
+                success: function(){
+                  psiturk.completeHIT(); //Complete the HIT
+                }
+              });
+            }
+          },
+          on_trial_finish: function(){ //Execute this after every trial
+            if (psiTurkIsOn){
+              save_data(tableName, [jsPsych.data.get().last(1).values()[0]]);
+            }
+          }
+        });
+
+        
+        //------psiTurk Functions Begin------
+    
+        //A function to save the data to the SQL table on the psiturk server.  This gets called at the end of the file.
+        function save_data(data_table,data){
+          
+          //Retrieve data from psiTurk and add to jsPsych data 
+          jsPsych.data.addProperties(
+            {
+              workerId: psiturk.taskdata.get('workerId'),
+              assignmentId: psiturk.taskdata.get('assignmentId'),
+              hitId: psiturk.taskdata.get('hitId') 
+            }
+          );
+          
+          //Use AJAX to post the data onto the psiturk server
+          $.ajax({
+            type:'post',
+            cache: false,
+            url: 'https://psiturk.psych.ucla.edu/~' + username + '/' + folderName + '/templates/savedata.php',
+            data: {
+              table: data_table,
+              json: JSON.stringify(data),
+            },
+            success: function(output) { console.log(output); } // write the result to javascript console
+          });
+        }
+        
+        //------psiTurk Functions End------
+
+
+
+    </script>
+</html>
