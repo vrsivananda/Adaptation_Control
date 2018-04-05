@@ -103,11 +103,7 @@
         
         //COLOR PARAMETERS
         var centerSaturation = 0.50;
-        var periSatCondition30 = 0.30; 
-        var periSatCondition40 = 0.40; 
-        var periSatCondition50 = 0.50; 
-        var periSatCondition60 = 0.60; 
-        var periSatCondition70 = 0.70; 
+        var peripherySaturationArray = [0.3,0.4,0.5,0.6,0.7];
         
         var theObjectsValue = 1.0;
 
@@ -152,9 +148,23 @@
         //Push the trials into the timeline array
         timeline.push(hello_trial);
         
-        //
+        //===========================
         //======== FUNCTIONS ========
         //===========================
+        
+        //Function to make the array of slides
+        function makeTrials(){
+          
+          //Array to hold all the trials
+          var allTrials = [];
+          
+          //For loop to make each trial
+          for(let i = 0; i < peripherySaturationArray.length; i++){
+            allTrials.push()
+          }
+          
+          
+        }//End of makeTrials
         
         //Function to generate a color at a certain hue, saturation, and value
         function generateColor(h,s,v){
